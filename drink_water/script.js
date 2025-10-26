@@ -23,7 +23,7 @@ function generateCups() {
     const numCups = Math.ceil((goalLiters * 1000) / CUP_SIZE_ML);
 
     for (let i = 0; i < numCups; i++) {
-        const cup = document.createElement('button'); // Use <button> for accessibility
+        const cup = document.createElement('button');
         cup.classList.add('cup', 'cup-small');
         cup.innerText = `${CUP_SIZE_ML} ml`;
         cup.addEventListener('click', () => highlightCups(i));
@@ -35,10 +35,8 @@ function generateCups() {
 
 /**
  * Toggles the 'full' class on cups up to the clicked index.
- * @param {number} idx - The index of the clicked cup.
  */
 function highlightCups(idx) {
-    // If the clicked cup is full and is the last filled one, unfill it.
     if (smallCups[idx].classList.contains('full') && (idx === smallCups.length - 1 || !smallCups[idx + 1].classList.contains('full'))) {
         idx--;
     }
@@ -51,11 +49,14 @@ function highlightCups(idx) {
 }
 
 /**
- * Updates the main cup display based on filled cups.
+ * Updates the main cup display and saves progress.
  */
 function updateBigCup() {
     const fullCups = document.querySelectorAll('.cup-small.full').length;
     const litersDrank = (CUP_SIZE_ML * fullCups) / 1000;
+
+    // NEW: Save the number of filled cups to localStorage
+    localStorage.setItem('filledCups', fullCups);
 
     if (fullCups === 0) {
         percentage.style.visibility = 'hidden';
@@ -63,12 +64,11 @@ function updateBigCup() {
     } else {
         percentage.style.visibility = 'visible';
         const percentComplete = Math.min((litersDrank / goalLiters) * 100, 100);
-        const bigCupHeight = 330; // Max height of the big cup
+        const bigCupHeight = 330;
         percentage.style.height = `${(percentComplete / 100) * bigCupHeight}px`;
         percentage.innerText = `${Math.round(percentComplete)}%`;
     }
 
-    // Check if the goal is met to trigger celebration
     if (litersDrank >= goalLiters) {
         remained.style.visibility = 'hidden';
         remained.style.height = 0;
@@ -91,13 +91,15 @@ function triggerCelebration() {
     setTimeout(() => {
         celebration.classList.remove('show');
         celebration.classList.add('hidden');
-    }, 1500); // Must match the animation duration in CSS
+    }, 1500);
 }
 
 /**
- * Resets the cups to empty.
+ * Resets the cups to empty and clears storage.
  */
 function reset() {
+    // NEW: Clear the saved progress in localStorage as well
+    localStorage.setItem('filledCups', 0);
     smallCups.forEach(cup => cup.classList.remove('full'));
     updateBigCup();
 }
@@ -110,15 +112,24 @@ goalInput.addEventListener('input', (e) => {
     if (newGoal && newGoal > 0) {
         goalLiters = newGoal;
         localStorage.setItem('waterGoal', goalLiters);
-        generateCups(); // Regenerate cups for the new goal
+        generateCups();
         updateBigCup();
     }
 });
 
-
 // --- Initial App Start ---
 function init() {
     generateCups();
+
+    // NEW: Load saved progress from localStorage
+    const filledCups = localStorage.getItem('filledCups') || 0;
+    for (let i = 0; i < filledCups; i++) {
+        // Safety check in case the number of cups has changed
+        if (smallCups[i]) {
+            smallCups[i].classList.add('full');
+        }
+    }
+
     updateBigCup();
 }
 
